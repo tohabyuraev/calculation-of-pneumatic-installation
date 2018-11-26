@@ -24,35 +24,36 @@ def get_plot(cordx, cordy, strx, stry):
     plt.plot(cordx, cordy), plt.grid(True), plt.ylabel(stry), plt.xlabel(strx), plt.show()
 
 
-def fetta(mah, number, string):
-    """"Параметр в пересчете чисел Иаха
-    Принимает на вход число Маха mah <float>, количество координат number <float> и + или - string <str>"""
-    for i in range(number):
-        if abs(mah[i]) >= 1 and string == 'plus':
-            return 0.5 * (mah[i] + abs(mah[i]))
-        if abs(mah[i]) >= 1 and string == 'mines':
-            return 0.5 * (mah[i] - abs(mah[i]))
-        if abs(mah[i]) < 1 and string == 'plus':
-            return 0.25 * ((mah[i] + 1) ** 2) * (1 + 4 * 1 / 8 * ((mah[i] - 1) ** 2))
-        if abs(mah[i]) < 1 and string == 'mines':
-            return - 0.25 * ((mah[i] - 1) ** 2) * (1 + 4 * 1 / 8 * ((mah[i] + 1) ** 2))
+def fetta(mah, string):
+    # Функция работает правильно
+    """"Параметр в пересчете чисел Маха
+    Принимает на вход число Маха mah <float> и + или - string <str>"""
+    if abs(mah) >= 1 and string == 'plus':
+        return 0.5 * (mah + abs(mah))
+    if abs(mah) >= 1 and string == 'mines':
+        return 0.5 * (mah - abs(mah))
+    if abs(mah) < 1 and string == 'plus':
+        return 0.25 * ((mah + 1) ** 2) * (1 + 4 * 1 / 8 * ((mah - 1) ** 2))
+    if abs(mah) < 1 and string == 'mines':
+        return - 0.25 * ((mah - 1) ** 2) * (1 + 4 * 1 / 8 * ((mah + 1) ** 2))
 
 
-def getta(mah, number, string):
+def getta(mah, string):
+    # Функция работает правильно
     """Параметр в пересчете давления на границе
     Принимает на вход число Маха mah <float> и + или - string <str>"""
-    for i in range(number):
-        if abs(mah[i]) >= 1 and string == 'plus':
-            return (mah[i] + abs(mah[i])) / 2 / mah[i]
-        if abs(mah[i]) >= 1 and string == 'mines':
-            return (mah[i] - abs(mah[i])) / 2 / mah[i]
-        if abs(mah[i]) < 1 and string == 'plus':
-            return ((mah[i] + 1) ** 2) * ((2 - mah[i]) / 4 + 3 / 16 * mah[i] * ((mah[i] - 1) ** 2))
-        if abs(mah[i]) < 1 and string == 'mines':
-            return ((mah[i] - 1) ** 2) * ((2 + mah[i]) / 4 + 3 / 16 * mah[i] * ((mah[i] + 1) ** 2))
+    if abs(mah) >= 1 and string == 'plus':
+        return (mah + abs(mah)) / 2 / mah
+    if abs(mah) >= 1 and string == 'mines':
+        return (mah - abs(mah)) / 2 / mah
+    if abs(mah) < 1 and string == 'plus':
+        return ((mah + 1) ** 2) * ((2 - mah) / 4 + 3 / 16 * mah * ((mah - 1) ** 2))
+    if abs(mah) < 1 and string == 'mines':
+        return ((mah - 1) ** 2) * ((2 + mah) / 4 + 3 / 16 * mah * ((mah + 1) ** 2))
 
 
 def sp_cr(press_0, press_1, mass, v0, tau):
+    # Функция возможно работает правильно
     """Выводит скорость последней границы и кприращение координаты последней границы
         Входные данные: press-1, press, mass (масса снаряда), vo (скорость снаряда на пред шаге), tau """
     sectional = mt.pi * (init_data['d'] ** 2) / 4
@@ -64,6 +65,7 @@ def sp_cr(press_0, press_1, mass, v0, tau):
 
 
 def coef_stretch(x_now, x_now_next, x_prev, x_prev_next):
+    # Необходимо перенаписать. Возможно работает правильно
     """Функция рассчитывает коэффициент растяжения сетки
         x_now_next это координаты на след шаге по времени [i+1]
         x_prev_next это координаты на наст шаге по времени [i+1]"""
