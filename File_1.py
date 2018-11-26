@@ -30,7 +30,7 @@ class EulerianGrid(object):
         self.mah_interface = np.full(init_data['num_coor'], 0)
         self.c_interface = np.full(init_data['num_coor'], 0)
         self.x_interface = np.linspace(0, init_data['Lo'], init_data['num_coor'])
-        self.press_interface = np.full(init_data['num_coor'], 0)
+        self.press_interface = np.full(init_data['num_coor'], 0.0)
         self.v_interface = np.full(init_data['num_coor'], 0)
 
         self.f_param = np.array([self.ro_cell * self.v_cell, self.press_cell + self.ro_cell * (self.v_cell ** 2),
@@ -50,8 +50,11 @@ class EulerianGrid(object):
         self.q_param[2] = self.buf[0] * (self.q_param[2] - self.tau / self.buf[1] * (np.roll(self.q_param[2], -1) -
                                                                                      self.q_param[2]))
         self.ro_cell = self.q_param[0]
-        # self.v_cell = self.q_param[1] / self.ro_cell
+        # print(self.ro_cell)
+        # Плотность при пересчете получается много отрицательной
+        self.v_cell = self.q_param[1] / self.ro_cell
         # self.press_cell = self.ro_cell * self.temp * self.R
+        # Значение давления выходит за границы типа int
         # self.c_cell = np.sqrt(self.k * self.press_cell / self.ro_cell)
         # return q_param
 
@@ -72,6 +75,7 @@ class EulerianGrid(object):
                                                      [2])) + self.press_interface * self.v_interface
 
     def get_ff(self, str):
+        # Функция работает возможно правильно (по формуле сходится)
         if str == 'mines':
             self.ff_param_m = [self.ro_cell, self.ro_cell * self.v_cell,
                                self.ro_cell * ((self.energy_cell +
@@ -129,7 +133,7 @@ while layer.x_interface[layer.num_coor - 1] <= init_data['L']:
     prev_x_interface = layer.x_interface  # Для расчета q
     answer = sp_cr(layer.press_cell[layer.num_coor - 1], 0, init_data['mass'],
                    layer.v_interface[layer.num_coor - 1], layer.tau)
-    print(layer.dfg)
+    # print(None)
 
     # answer возвращает скорость правой границы и приращение координаты
     # Пересчет скоростей и перемещений границ работает правильно
@@ -145,13 +149,14 @@ while layer.x_interface[layer.num_coor - 1] <= init_data['L']:
 
     layer.get_c_interface()
     layer.get_mah_interface()
+    layer.get_press_interface()
     layer.get_ff('mines')
     layer.get_ff('plus')
     layer.get_f()
     layer.get_q(prev_x_interface)
     # print()
 
-# get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
+get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
 # print(layer.get_tau())
 
 # layer.get_c_interface()
