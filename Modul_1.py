@@ -12,7 +12,7 @@ init_data = {
     'L': 4,
     'mass': 0.1,
     'k': 1.4,
-    'Ku': 0.5,
+    'Ku': 0.7,
     'R': 287,
     'atmo': 10 ** 5
 }
@@ -52,15 +52,15 @@ def getta(mah, string):
         return ((mah - 1) ** 2) * ((2 + mah) / 4 + 3 / 16 * mah * ((mah + 1) ** 2))
 
 
-def sp_cr(press_0, press_1, mass, v0, tau):
-    # Функция возможно работает правильно
+def sp_cr(press_0, mass, v0, x0, tau):
+    # Функция работает правильно
     """Выводит скорость последней границы и кприращение координаты последней границы
         Входные данные: press-1, press, mass (масса снаряда), vo (скорость снаряда на пред шаге), tau """
     sectional = mt.pi * (init_data['d'] ** 2) / 4
-    acce = (press_0 - press_1) * sectional / mass
+    acce = press_0 * sectional / mass
     speed = v0 + acce * tau
-    dx = v0 * tau + acce * (tau ** 2) / 2
-    answer_sp_cr = [speed, dx]
+    x = x0 + v0 * tau + acce * (tau ** 2) / 2
+    answer_sp_cr = [speed, x]
     return answer_sp_cr
 
 
