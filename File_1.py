@@ -31,7 +31,8 @@ class EulerianGrid(object):
 
         self.mah_interface = np.full(init_data['num_coor'], 0.0)
         self.c_interface = np.full(init_data['num_coor'], 0.0)
-        self.x_interface = np.linspace(0, init_data['Lo'], init_data['num_coor'])
+        # self.x_interface = np.linspace(0, init_data['Lo'], init_data['num_coor'])
+        self.x_interface = np.full(init_data['num_coor'], 0.0)
         self.press_interface = np.full(init_data['num_coor'], 0.0)
         self.v_interface = np.full(init_data['num_coor'], 0.0)
 
@@ -52,8 +53,7 @@ class EulerianGrid(object):
         self.q_param[2] = self.buf[0] * (self.q_param[2] - self.tau / self.buf[1] * (np.roll(self.q_param[2], -1) -
                                                                                      self.q_param[2]))
         self.ro_cell = self.q_param[0]
-        # print(self.ro_cell)
-        # Плотность при пересчете получается много отрицательной
+        # Плотность при пересчете получается много отрицательной?
         self.v_cell = self.q_param[1] / self.ro_cell
         self.energy_cell = self.q_param[2] / self.q_param[0] - (self.v_cell ** 2) / 2
         self.press_cell = self.ro_cell * self.energy_cell * (self.k - 1)
@@ -93,78 +93,72 @@ class EulerianGrid(object):
 
     def get_c_interface(self):
         # Функция работает правильно
-        for i in range(self.num_coor - 2):
+        for i in range(self.num_coor - 1):
             self.c_interface[i] = (self.c_cell[i + 1] + self.c_cell[i]) / 2
 
     def get_mah_m(self):
-        # Функция работает неправильно
-        # Присваиваемое выражение считается правильно, но self.mah_cell_m остается нулевым
-        # self.v_cell = (np.roll(self.v_interface, -1) + self.v_interface) / 2
-        for i in range(self.num_coor - 2):
+        # Функция работает возможно правильно (по формуле)
+        for i in range(self.num_coor - 1):
             self.mah_cell_m[i] = (self.v_cell[i] - self.v_interface[i]) / self.c_interface[i]
         # print(self.mah_cell_m)
 
     def get_mah_p(self):
-        # Аналогично минусу
-        for i in range(self.num_coor - 2):
-            self.mah_cell_p[i + 1] = (self.v_cell[i + 1] - self.v_interface[i]) / self.c_interface[i]
+        # Функция работает возможно правильно (по формуле)
+        for i in range(self.num_coor - 1):
+            self.mah_cell_p[i] = (self.v_cell[i + 1] - self.v_interface[i]) / self.c_interface[i]
 
     def get_mah_interface(self):
-        # Аналогично минусу
-        for i in range(self.num_coor - 2):
+        # Функция работает возможно правильно (по формуле)
+        # self.mah_cell_m = np.full(init_data['num_coor'], 0.0)
+        # self.mah_cell_p = np.full(init_data['num_coor'], 0.0)
+        # Значения справа и слева противоположны по знаку и не равны 0
+        for i in range(self.num_coor - 1):
             self.mah_interface[i] = fetta(self.mah_cell_m[i], 'plus') + fetta(self.mah_cell_p[i], 'mines')
 
     def get_press_interface(self):
-        # Аналогично минусу
-        for i in range(self.num_coor - 2):
+        # Функция работает возможно правильно (по формуле)
+        for i in range(self.num_coor - 1):
             self.press_interface[i] = getta(self.mah_cell_m[i], 'plus') * self.press_cell[i] + \
                                getta(self.mah_cell_p[i], 'mines') * self.press_cell[i+1]
 
     def get_tau(self):
         # Функция работает правильно
         buf = []
-        for i in range(self.num_coor - 3):
+        for i in range(self.num_coor - 2):
             self.buf = (self.x_interface[i+1] - self.x_interface[i]) / (abs(self.v_cell[i + 1]) + self.c_cell[i + 1])
             buf.append(self.buf)
         self.buf = min(buf)
         self.tau = self.kurant * self.buf
 
     def border(self):
+        # Функция работает возможно правильно
         self.q_param[1][0] = -self.q_param[1][1]
         self.q_param[1][self.num_coor - 1] = -self.q_param[1][self.num_coor - 2] + self.q_param[0][self.num_coor - 2] \
             * self.v_interface[self.num_coor - 2]
-        # self.v_interface[self.num_coor] = 0
 
-    def x_append(self):
-        np.append(self.x_interface, [])
+    def x_recalculation(self, long):
+        # Функция работает правильно
+        self.buf = np.linspace(0, long, init_data['num_coor'] - 1)
+        for i in range(self.num_coor - 1):
+            self.x_interface[i] = self.buf[i]
+        self.x_interface[self.num_coor - 1] = 1
 
 
 layer = EulerianGrid(init_data)
 all_time_arr = []
 all_speed_arr = []
 all_press_arr = []
-dfg = 0
-layer.x_append()
-# print(layer.v_interface)
+layer.x_recalculation(init_data['Lo'])
 
 while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_tau()
     layer.border()
     prev_x_interface = layer.x_interface  # Для расчета q
-    # print(layer.tau)
     answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
                    layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
-    # print(answer[0])
-
     # answer возвращает скорость правой границы и приращение координаты
     # Пересчет скоростей и перемещений границ работает правильно)
-    dfg = []
-    dfg.append(np.linspace(0, answer[1], layer.num_coor))
-    print(layer.x_interface[layer.num_coor - 2])
-    dfg.append([])
-    layer.x_interface = np.linspace(0, answer[1], layer.num_coor)
-    # Необходимо переделать распределение координат интерфейса!
-    # print(layer.x_interface[layer.num_coor - 2])
+    layer.x_recalculation(answer[1])
     layer.v_interface[layer.num_coor - 2] = answer[0]
     k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
     layer.v_interface = k_line * layer.x_interface
@@ -182,13 +176,7 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_ff('plus')
     layer.get_f()
     layer.get_q(prev_x_interface)
-    # print(layer.f_param)
-    # print(layer.tau)
 
 print(None)
 # get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
 
-# layer.get_c_interface()
-# print(layer.ff_param_p[1] - layer.ff_param_m[1])
-# print(mt.sqrt(layer.k * init_data['press'] / init_data['ro']))
-# print(layer.q_param)
