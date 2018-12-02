@@ -6,7 +6,7 @@ init_data = {
     'press': 0.5 * (10 ** 6),
     'ro': 141.741,
     'e': 250,
-    'Lo': 0.506,
+    'Lo': 0.5,
     'd': 0.03,
     'L': 4,
     'mass': 0.1,
@@ -63,12 +63,12 @@ def sp_cr(press_0, mass, v0, x0, tau):
     return answer_sp_cr
 
 
-def coef_stretch(x_now, x_now_next, x_prev, x_prev_next):
+def coef_stretch(x_now, x_next, x_prev, x_prev_next):
     # Необходимо перенаписать. Возможно работает правильно
     """Функция рассчитывает коэффициент растяжения сетки
         x_now_next это координаты на след шаге по времени [i+1]
         x_prev_next это координаты на наст шаге по времени [i+1]"""
-    delta_x_now = 0.5 * (x_now - x_now_next + x_prev - x_prev_next)
+    delta_x_now = x_now - x_next
     delta_x_prev = x_prev - x_prev_next
     coef = delta_x_prev / delta_x_now
     answer = [coef, delta_x_prev]

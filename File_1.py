@@ -43,8 +43,7 @@ class EulerianGrid(object):
                                 (self.energy_cell + (self.v_cell ** 2) / 2)])
 
     def get_q(self, x_interface_prev):
-        self.buf = coef_stretch(self.x_interface, np.roll(self.x_interface, -1), x_interface_prev,
-                                np.roll(x_interface_prev, 1))
+        self.buf = coef_stretch(self.x_interface[0], self.x_interface[1], x_interface_prev[0], x_interface_prev[1])
         # В переменную buf записаны [0] коэффициент растяжения и [1] расстояние между границами на пред шаге
         self.q_param[0] = self.buf[0] * (self.q_param[0] - self.tau / self.buf[1] * (np.roll(self.q_param[0], -1) -
                                                                                      self.q_param[0]))
@@ -112,6 +111,7 @@ class EulerianGrid(object):
         # self.mah_cell_m = np.full(init_data['num_coor'], 0.0)
         # self.mah_cell_p = np.full(init_data['num_coor'], 0.0)
         # Значения справа и слева противоположны по знаку и не равны 0
+        # print(fetta(self.mah_cell_p[98], 'plus'))
         for i in range(self.num_coor - 1):
             self.mah_interface[i] = fetta(self.mah_cell_m[i], 'plus') + fetta(self.mah_cell_p[i], 'mines')
 
@@ -177,6 +177,6 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_f()
     layer.get_q(prev_x_interface)
 
-print(None)
-# get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
+# print(None)
+get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
 
