@@ -33,6 +33,7 @@ class EulerianGrid(object):
         self.c_interface = np.full(init_data['num_coor'], 0.0)
         # self.x_interface = np.linspace(0, init_data['Lo'], init_data['num_coor'])
         self.x_interface = np.full(init_data['num_coor'], 0.0)
+        self.x_interface_prev = np.full(init_data['num_coor'], 0.0)
         self.press_interface = np.full(init_data['num_coor'], 0.0)
         self.v_interface = np.full(init_data['num_coor'], 0.0)
 
@@ -44,6 +45,7 @@ class EulerianGrid(object):
 
     def get_q(self, x_interface_prev):
         self.buf = coef_stretch(self.x_interface[0], self.x_interface[1], x_interface_prev[0], x_interface_prev[1])
+        print(self.buf[0])
         # В переменную buf записаны [0] коэффициент растяжения и [1] расстояние между границами на пред шаге
         self.q_param[0] = self.buf[0] * (self.q_param[0] - self.tau / self.buf[1] * (np.roll(self.q_param[0], -1) -
                                                                                      self.q_param[0]))
@@ -52,15 +54,13 @@ class EulerianGrid(object):
         self.q_param[2] = self.buf[0] * (self.q_param[2] - self.tau / self.buf[1] * (np.roll(self.q_param[2], -1) -
                                                                                      self.q_param[2]))
         self.ro_cell = self.q_param[0]
-        # Плотность при пересчете получается много отрицательной?
-        self.v_cell = self.q_param[1] / self.ro_cell
+        self.v_cell = self.q_param[1] / self.q_param[0]
         self.energy_cell = self.q_param[2] / self.q_param[0] - (self.v_cell ** 2) / 2
         self.press_cell = self.ro_cell * self.energy_cell * (self.k - 1)
         self.c_cell = np.sqrt(self.k * self.press_cell / self.ro_cell)
 
     def get_f(self):
         # Функция возможно работает правильно
-        # (self.ff_param_p[0] - self.ff_param_m[0]) разность равняется 0, а это не хорошо
         self.f_param[0] = 0.5 * self.c_interface * (self.mah_interface *
                                                     (self.ff_param_p[0] + self.ff_param_m[0]) -
                                                     abs(self.mah_interface) *
@@ -78,16 +78,16 @@ class EulerianGrid(object):
     def get_ff(self, str):
         # Функция работает возможно правильно (по формуле сходится)
         if str == 'mines':
-            for i in range(self.num_coor - 2):
+            for i in range(self.num_coor - 1):
                 self.ff_param_m[0][i] = self.ro_cell[i]
                 self.ff_param_m[1][i] = self.ro_cell[i] * self.v_cell[i]
                 self.ff_param_m[2][i] = self.ro_cell[i] * (self.energy_cell[i] + (self.v_cell[i] ** 2) / 2 +
                                                            self.press_cell[i] / self.ro_cell[i])
         if str == 'plus':
-            for i in range(self.num_coor - 2):
-                self.ff_param_m[0][i] = self.ro_cell[i + 1]
-                self.ff_param_m[1][i] = self.ro_cell[i + 1] * self.v_cell[i + 1]
-                self.ff_param_m[2][i] = self.ro_cell[i + 1] * (self.energy_cell[i + 1] + (self.v_cell[i + 1] ** 2) / 2 +
+            for i in range(self.num_coor - 1):
+                self.ff_param_p[0][i] = self.ro_cell[i + 1]
+                self.ff_param_p[1][i] = self.ro_cell[i + 1] * self.v_cell[i + 1]
+                self.ff_param_p[2][i] = self.ro_cell[i + 1] * (self.energy_cell[i + 1] + (self.v_cell[i + 1] ** 2) / 2 +
                                                                self.press_cell[i + 1] / self.ro_cell[i + 1])
 
     def get_c_interface(self):
@@ -108,10 +108,6 @@ class EulerianGrid(object):
 
     def get_mah_interface(self):
         # Функция работает возможно правильно (по формуле)
-        # self.mah_cell_m = np.full(init_data['num_coor'], 0.0)
-        # self.mah_cell_p = np.full(init_data['num_coor'], 0.0)
-        # Значения справа и слева противоположны по знаку и не равны 0
-        # print(fetta(self.mah_cell_p[98], 'plus'))
         for i in range(self.num_coor - 1):
             self.mah_interface[i] = fetta(self.mah_cell_m[i], 'plus') + fetta(self.mah_cell_p[i], 'mines')
 
@@ -138,34 +134,39 @@ class EulerianGrid(object):
 
     def x_recalculation(self, long):
         # Функция работает правильно
-        self.buf = np.linspace(0, long, init_data['num_coor'] - 1)
+        """Метод достраивает размерность массивов x_interface
+        long это координата дна снаряда"""
+        self.buf = np.linspace(0, long, self.num_coor - 1)
         for i in range(self.num_coor - 1):
             self.x_interface[i] = self.buf[i]
-        self.x_interface[self.num_coor - 1] = 1
+        self.x_interface[self.num_coor - 1] = 0
 
 
 layer = EulerianGrid(init_data)
 all_time_arr = []
 all_speed_arr = []
 all_press_arr = []
+press_bottom_arr = []
 layer.x_recalculation(init_data['Lo'])
 
 while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_tau()
     layer.border()
-    prev_x_interface = layer.x_interface  # Для расчета q
+    layer.x_interface_prev = layer.x_interface  # Для расчета q
     answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
                    layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
-    # answer возвращает скорость правой границы и приращение координаты
-    # Пересчет скоростей и перемещений границ работает правильно)
+    # answer возвращает скорость правой границы и ее координату
+    # Пересчет скоростей и перемещений границ работает правильно
     layer.x_recalculation(answer[1])
+    # После строки выше меняется layer.x_interface_prev
     layer.v_interface[layer.num_coor - 2] = answer[0]
     k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
     layer.v_interface = k_line * layer.x_interface
 
     get_all_value(layer.tau, all_time_arr, 'time')
-    get_all_value(layer.v_interface[len(layer.v_interface) - 1], all_speed_arr, 'speed')
-    get_all_value(layer.press_cell[len(layer.press_interface) - 1], all_press_arr, 'press')
+    get_all_value(layer.v_interface[len(layer.v_interface) - 2], all_speed_arr, 'speed')
+    get_all_value(layer.press_cell[len(layer.press_interface) - 2], all_press_arr, 'press')
+    get_all_value(layer.press_cell[1], press_bottom_arr, 'press')
 
     layer.get_c_interface()
     layer.get_mah_m()
@@ -175,8 +176,9 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_ff('mines')
     layer.get_ff('plus')
     layer.get_f()
-    layer.get_q(prev_x_interface)
+    layer.get_q(layer.x_interface_prev)
 
-# print(None)
-get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
-
+# print(len(layer.v_interface))
+# get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
+# get_plot(all_time_arr, all_press_arr, 'Время', 'Давление')
+# get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола')
