@@ -6,6 +6,7 @@ class EulerianGrid(object):
     def __init__(self, init_data):
         self.buf = 0
         self.tau = 0
+        self.x_prev = 0
         self.R = init_data['R']
         self.k = init_data['k']
         self.kurant = init_data['Ku']
@@ -17,9 +18,11 @@ class EulerianGrid(object):
         self.energy_cell = np.full(init_data['num_coor'],
                                    init_data['press'] / (init_data['k'] - 1) / init_data['ro'])
         self.c_cell = np.full(init_data['num_coor'], np.sqrt(init_data['k'] * init_data['press'] / init_data['ro']))
+
         # Для расчета Маха на интерфейсе
         self.mah_cell_m = np.full(init_data['num_coor'], 0.0)
         self.mah_cell_p = np.full(init_data['num_coor'], 0.0)
+
         # Для расчета потока f (Векторы Ф )
         self.ff_param_m = np.array([np.full(init_data['num_coor'], 0.0), np.full(init_data['num_coor'], 0.0),
                                    np.full(init_data['num_coor'], 0.0)])
@@ -31,9 +34,7 @@ class EulerianGrid(object):
 
         self.mah_interface = np.full(init_data['num_coor'], 0.0)
         self.c_interface = np.full(init_data['num_coor'], 0.0)
-        # self.x_interface = np.linspace(0, init_data['Lo'], init_data['num_coor'])
         self.x_interface = np.full(init_data['num_coor'], 0.0)
-        self.x_interface_prev = np.full(init_data['num_coor'], 0.0)
         self.press_interface = np.full(init_data['num_coor'], 0.0)
         self.v_interface = np.full(init_data['num_coor'], 0.0)
 
@@ -43,9 +44,8 @@ class EulerianGrid(object):
         self.q_param = np.array([self.ro_cell, self.ro_cell * self.v_cell, self.ro_cell *
                                 (self.energy_cell + (self.v_cell ** 2) / 2)])
 
-    def get_q(self, x_interface_prev):
-        self.buf = coef_stretch(self.x_interface[0], self.x_interface[1], x_interface_prev[0], x_interface_prev[1])
-        print(self.buf[0])
+    def get_q(self):
+        self.buf = coef_stretch(0, self.x_interface[1], 0, self.x_prev)
         # В переменную buf записаны [0] коэффициент растяжения и [1] расстояние между границами на пред шаге
         self.q_param[0] = self.buf[0] * (self.q_param[0] - self.tau / self.buf[1] * (np.roll(self.q_param[0], -1) -
                                                                                      self.q_param[0]))
@@ -152,7 +152,7 @@ layer.x_recalculation(init_data['Lo'])
 while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_tau()
     layer.border()
-    layer.x_interface_prev = layer.x_interface  # Для расчета q
+    layer.x_prev = layer.x_interface[1]  # Для расчета q
     answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
                    layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
     # answer возвращает скорость правой границы и ее координату
@@ -176,9 +176,9 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_ff('mines')
     layer.get_ff('plus')
     layer.get_f()
-    layer.get_q(layer.x_interface_prev)
+    layer.get_q()
 
 # print(len(layer.v_interface))
-# get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
-# get_plot(all_time_arr, all_press_arr, 'Время', 'Давление')
-# get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола')
+get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
+get_plot(all_time_arr, all_press_arr, 'Время', 'Давление')
+get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола')

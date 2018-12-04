@@ -70,7 +70,7 @@ def coef_stretch(x_now, x_now_next, x_prev, x_prev_next):
     delta_x_now = x_now_next - x_now
     delta_x_prev = x_prev_next - x_prev
     coef = delta_x_prev / delta_x_now
-    answer = [coef, delta_x_prev]
+    answer = [coef, - delta_x_prev]
     return answer
 
 
