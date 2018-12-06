@@ -47,12 +47,13 @@ class EulerianGrid(object):
     def get_q(self):
         self.buf = coef_stretch(0, self.x_interface[1], 0, self.x_prev)
         # В переменную buf записаны [0] коэффициент растяжения и [1] расстояние между границами на пред шаге
-        self.q_param[0] = self.buf[0] * (self.q_param[0] - self.tau / self.buf[1] * (np.roll(self.q_param[0], -1) -
-                                                                                     self.q_param[0]))
-        self.q_param[1] = self.buf[0] * (self.q_param[1] - self.tau / self.buf[1] * (np.roll(self.q_param[1], -1) -
-                                                                                     self.q_param[1]))
-        self.q_param[2] = self.buf[0] * (self.q_param[2] - self.tau / self.buf[1] * (np.roll(self.q_param[2], -1) -
-                                                                                     self.q_param[2]))
+        for i in range(1, self.num_coor - 1):
+            self.q_param[0][i] = self.buf[0] * (self.q_param[0][i] - self.tau / self.buf[1] * (self.f_param[0][i] -
+                                                                                               self.f_param[0][i - 1]))
+            self.q_param[1][i] = self.buf[0] * (self.q_param[1][i] - self.tau / self.buf[1] * (self.f_param[1][i] -
+                                                                                               self.f_param[1][i - 1]))
+            self.q_param[2][i] = self.buf[0] * (self.q_param[2][i] - self.tau / self.buf[1] * (self.f_param[2][i] -
+                                                                                               self.f_param[2][i - 1]))
         self.ro_cell = self.q_param[0]
         self.v_cell = self.q_param[1] / self.q_param[0]
         self.energy_cell = self.q_param[2] / self.q_param[0] - (self.v_cell ** 2) / 2
@@ -128,9 +129,17 @@ class EulerianGrid(object):
 
     def border(self):
         # Функция работает возможно правильно
-        self.q_param[1][0] = -self.q_param[1][1]
-        self.q_param[1][self.num_coor - 1] = -self.q_param[1][self.num_coor - 2] + self.q_param[0][self.num_coor - 2] \
-            * self.v_interface[self.num_coor - 2]
+        self.q_param[0][0] = self.q_param[0][1]
+        self.q_param[0][self.num_coor - 1] = self.q_param[0][self.num_coor - 2]
+
+        self.q_param[1][0] = - self.q_param[1][1]
+        self.q_param[1][self.num_coor - 1] = self.q_param[0][self.num_coor - 1] * (- self.q_param[1][self.num_coor - 2]
+                                                                                   / self.q_param[0][self.num_coor - 2]
+                                                                                   + 2 * self.v_interface[self.num_coor
+                                                                                                          - 2])
+
+        self.q_param[2][0] = self.q_param[2][1]
+        self.q_param[2][self.num_coor - 1] = self.q_param[2][self.num_coor - 2]
 
     def x_recalculation(self, long):
         # Функция работает правильно
@@ -149,7 +158,7 @@ all_press_arr = []
 press_bottom_arr = []
 layer.x_recalculation(init_data['Lo'])
 
-while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
+while True:
     layer.get_tau()
     layer.border()
     layer.x_prev = layer.x_interface[1]  # Для расчета q
@@ -158,7 +167,6 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     # answer возвращает скорость правой границы и ее координату
     # Пересчет скоростей и перемещений границ работает правильно
     layer.x_recalculation(answer[1])
-    # После строки выше меняется layer.x_interface_prev
     layer.v_interface[layer.num_coor - 2] = answer[0]
     k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
     layer.v_interface = k_line * layer.x_interface
@@ -177,8 +185,10 @@ while layer.x_interface[layer.num_coor - 2] <= init_data['L']:
     layer.get_ff('plus')
     layer.get_f()
     layer.get_q()
+    if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
+        break
 
-# print(len(layer.v_interface))
-get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость')
-get_plot(all_time_arr, all_press_arr, 'Время', 'Давление')
-get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола')
+get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость', 'График зависимости скорости снаряда от времени')
+get_plot(all_time_arr, all_press_arr, 'Время', 'Давление', 'График зависимости давления на дно снаряда от времени')
+get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола',
+         'График зависимости давления на дно ствола от времени')

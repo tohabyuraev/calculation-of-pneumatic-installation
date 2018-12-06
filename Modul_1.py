@@ -16,10 +16,15 @@ init_data = {
 }
 
 
-def get_plot(cordx, cordy, strx, stry):
+def get_plot(cordx, cordy, strx, stry, strtitle):
     """Строит график
     Принимает cordx <float> и тд"""
-    plt.plot(cordx, cordy), plt.grid(True), plt.ylabel(stry), plt.xlabel(strx), plt.show()
+    plt.plot(cordx, cordy)
+    plt.grid(True)
+    plt.ylabel(stry)
+    plt.xlabel(strx)
+    plt.title(strtitle)
+    plt.show()
 
 
 def fetta(mah, string):
@@ -70,7 +75,7 @@ def coef_stretch(x_now, x_now_next, x_prev, x_prev_next):
     delta_x_now = x_now_next - x_now
     delta_x_prev = x_prev_next - x_prev
     coef = delta_x_prev / delta_x_now
-    answer = [coef, - delta_x_prev]
+    answer = [coef, delta_x_prev]
     return answer
 
 
