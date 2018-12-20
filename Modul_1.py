@@ -1,18 +1,33 @@
 import math as mt
 import matplotlib.pyplot as plt
 
+# init_data = {
+#     'num_coor': 100,
+#     'press': 10 * (10 ** 6),
+#     'ro': 12,
+#     'Lo': 0.075 * 2,
+#     'd': 0.075,
+#     'L': 0.075 * 40,
+#     'mass': 1,
+#     'k': 1.4,
+#     'Ku': 0.5,
+#     'R': 287
+# }
 init_data = {
     'num_coor': 100,
-    'press': 5 * (10 ** 6),
-    'ro': 141.741,
-    'Lo': 0.5,
-    'd': 0.03,
-    'L': 4,
-    'mass': 0.1,
+    'press': 10 * (10 ** 6),
+    'ro': 12,
+    'Lo': 0.075 * 2,
+    'd': 0.075,
+    'L': 0.075 * 40,
+    'mass': 1,
     'k': 1.4,
     'Ku': 0.5,
-    'R': 287,
-    'atmo': 10 ** 5
+    'R': 287
+}
+data_test = {
+    'Lend': 0.075 * 35,
+    'Pressend': 110 * (10 ** 6)
 }
 
 
@@ -92,3 +107,7 @@ def get_all_value(value, all_value, str):
         all_value.append(value)
     if str == 'press':
         all_value.append(value)
+
+
+def get_kpd(k, mass, speed, press, length0):
+    return (k - 1) / 2 * mass * (speed ** 2) / press / (mt.pi * (init_data['d'] ** 2) / 4 * length0)

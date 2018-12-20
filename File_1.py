@@ -3,7 +3,8 @@ from Modul_1 import *
 
 
 class EulerianGrid(object):
-    def __init__(self, init_data):
+    def __init__(self, init_data, press_init):
+        self.press = press_init
         self.buf = 0
         self.tau = 0
         self.x_prev = 0
@@ -12,12 +13,12 @@ class EulerianGrid(object):
         self.kurant = init_data['Ku']
         self.num_coor = init_data['num_coor']
 
-        self.press_cell = np.full(init_data['num_coor'], init_data['press'])
+        self.press_cell = np.full(init_data['num_coor'], press_init)
         self.ro_cell = np.full(init_data['num_coor'], init_data['ro'])
         self.v_cell = np.full(init_data['num_coor'], 0.0)
         self.energy_cell = np.full(init_data['num_coor'],
-                                   init_data['press'] / (init_data['k'] - 1) / init_data['ro'])
-        self.c_cell = np.full(init_data['num_coor'], np.sqrt(init_data['k'] * init_data['press'] / init_data['ro']))
+                                   press_init / (init_data['k'] - 1) / init_data['ro'])
+        self.c_cell = np.full(init_data['num_coor'], np.sqrt(init_data['k'] * press_init / init_data['ro']))
 
         # Для расчета Маха на интерфейсе
         self.mah_cell_m = np.full(init_data['num_coor'], 0.0)
@@ -59,6 +60,7 @@ class EulerianGrid(object):
         self.energy_cell = self.q_param[2] / self.q_param[0] - (self.v_cell ** 2) / 2
         self.press_cell = self.ro_cell * self.energy_cell * (self.k - 1)
         self.c_cell = np.sqrt(self.k * self.press_cell / self.ro_cell)
+        self.border()
 
     def get_f(self):
         # Функция возможно работает правильно
@@ -100,7 +102,6 @@ class EulerianGrid(object):
         # Функция работает возможно правильно (по формуле)
         for i in range(self.num_coor - 1):
             self.mah_cell_m[i] = (self.v_cell[i] - self.v_interface[i]) / self.c_interface[i]
-        # print(self.mah_cell_m)
 
     def get_mah_p(self):
         # Функция работает возможно правильно (по формуле)
@@ -116,7 +117,7 @@ class EulerianGrid(object):
         # Функция работает возможно правильно (по формуле)
         for i in range(self.num_coor - 1):
             self.press_interface[i] = getta(self.mah_cell_m[i], 'plus') * self.press_cell[i] + \
-                               getta(self.mah_cell_p[i], 'mines') * self.press_cell[i+1]
+                               getta(self.mah_cell_p[i], 'mines') * self.press_cell[i + 1]
 
     def get_tau(self):
         # Функция работает правильно
@@ -132,11 +133,10 @@ class EulerianGrid(object):
         self.q_param[0][0] = self.q_param[0][1]
         self.q_param[0][self.num_coor - 1] = self.q_param[0][self.num_coor - 2]
 
-        self.q_param[1][0] = - self.q_param[1][1]
-        self.q_param[1][self.num_coor - 1] = self.q_param[0][self.num_coor - 1] * (- self.q_param[1][self.num_coor - 2]
-                                                                                   / self.q_param[0][self.num_coor - 2]
-                                                                                   + 2 * self.v_interface[self.num_coor
-                                                                                                          - 2])
+        self.v_cell[0] = -self.v_cell[1]
+        self.q_param[1][0] = self.ro_cell[0] * self.v_cell[0]
+        self.q_param[1][self.num_coor - 1] = self.q_param[0][self.num_coor - 1] * \
+                                             (2 * self.v_interface[self.num_coor - 2] - self.v_cell[self.num_coor - 2])
 
         self.q_param[2][0] = self.q_param[2][1]
         self.q_param[2][self.num_coor - 1] = self.q_param[2][self.num_coor - 2]
@@ -151,16 +151,54 @@ class EulerianGrid(object):
         self.x_interface[self.num_coor - 1] = 0
 
 
-layer = EulerianGrid(init_data)
 all_time_arr = []
 all_speed_arr = []
 all_press_arr = []
 press_bottom_arr = []
-layer.x_recalculation(init_data['Lo'])
+# array_kpd = []
+# length0 = np.arange(init_data['Lo'], data_test['Lend'], 0.075)
+# pressend = np.arange(init_data['press'], data_test['Pressend'], 10 * (10 ** 6))
+print(None)
+# for i in length0:
+#     for k in pressend:
+#         layer = EulerianGrid(init_data, k)
+#         layer.x_recalculation(i)
+#         while True:
+#             layer.get_tau()
+#             layer.x_prev = layer.x_interface[1]  # Для расчета q
+#             answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
+#                            layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
+#             # answer возвращает скорость правой границы и ее координату
+#             # Пересчет скоростей и перемещений границ работает правильно
+#             layer.x_recalculation(answer[1])
+#             layer.v_interface[layer.num_coor - 2] = answer[0]
+#             k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
+#             layer.v_interface = k_line * layer.x_interface
+#
+#             # get_all_value(layer.tau, all_time_arr, 'time')
+#             # get_all_value(layer.v_interface[len(layer.v_interface) - 2], all_speed_arr, 'speed')
+#             # get_all_value(layer.press_cell[len(layer.press_interface) - 2], all_press_arr, 'press')
+#             # get_all_value(layer.press_cell[1], press_bottom_arr, 'press')
+#
+#             layer.get_c_interface()
+#             layer.get_mah_m()
+#             layer.get_mah_p()
+#             layer.get_mah_interface()
+#             layer.get_press_interface()
+#             layer.get_ff('mines')
+#             layer.get_ff('plus')
+#             layer.get_f()
+#             layer.get_q()
+#             if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
+#                 break
+#         buf = get_kpd(layer.k, init_data['mass'], layer.v_interface[98], k, i)
+#         # array_kpd.append(buf)
+#         print(layer.v_interface[98], k, i, buf)
 
+layer = EulerianGrid(init_data, init_data['press'])
+layer.x_recalculation(init_data['Lo'])
 while True:
     layer.get_tau()
-    layer.border()
     layer.x_prev = layer.x_interface[1]  # Для расчета q
     answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
                    layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
@@ -188,7 +226,17 @@ while True:
     if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
         break
 
+# print(None)
+# print(length0))
+print(None)
 get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость', 'График зависимости скорости снаряда от времени')
-get_plot(all_time_arr, all_press_arr, 'Время', 'Давление', 'График зависимости давления на дно снаряда от времени')
-get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола',
-         'График зависимости давления на дно ствола от времени')
+plt.plot(all_time_arr, all_press_arr)
+plt.plot(all_time_arr, press_bottom_arr)
+plt.grid(True)
+plt.ylabel('Давление')
+plt.xlabel('Время')
+plt.title('График зависимости давления на дно ствола от времени')
+plt.show()
+# get_plot(all_time_arr, all_press_arr, 'Время', 'Давление', 'График зависимости давления на дно снаряда от времени')
+# get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола',
+#          'График зависимости давления на дно ствола от времени')
