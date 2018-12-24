@@ -1,7 +1,22 @@
 import math as mt
 import matplotlib.pyplot as plt
 
+init_data = {
+    # Для тестовой задачи
+    'num_coor': 100,
+    'press': 5 * (10 ** 6),
+    'ro': 141.471,
+    'Lo': 0.5,
+    'd': 0.03,
+    'L': 2,
+    'mass': 0.1,
+    'k': 1.4,
+    'Ku': 0.5,
+    'R': 287
+}
+
 # init_data = {
+#     # Для оптимизации
 #     'num_coor': 100,
 #     'press': 10 * (10 ** 6),
 #     'ro': 12,
@@ -13,18 +28,21 @@ import matplotlib.pyplot as plt
 #     'Ku': 0.5,
 #     'R': 287
 # }
-init_data = {
-    'num_coor': 100,
-    'press': 10 * (10 ** 6),
-    'ro': 12,
-    'Lo': 0.075 * 2,
-    'd': 0.075,
-    'L': 0.075 * 40,
-    'mass': 1,
-    'k': 1.4,
-    'Ku': 0.5,
-    'R': 287
-}
+
+# init_data = {
+#     # Для прямой задачи
+#     'num_coor': 100,
+#     'press': 975 * (10 ** 5),
+#     'ro': 12,
+#     'Lo': 0.075 * 7,
+#     'd': 0.075,
+#     'L': 0.075 * 40,
+#     'mass': 1,
+#     'k': 1.4,
+#     'Ku': 0.5,
+#     'R': 287
+# }
+
 data_test = {
     'Lend': 0.075 * 35,
     'Pressend': 110 * (10 ** 6)
@@ -67,7 +85,7 @@ def getta(mah, string):
     if abs(mah) < 1 and string == 'plus':
         return ((mah + 1) ** 2) * ((2 - mah) / 4 + 3 / 16 * mah * ((mah - 1) ** 2))
     if abs(mah) < 1 and string == 'mines':
-        return ((mah - 1) ** 2) * ((2 + mah) / 4 + 3 / 16 * mah * ((mah + 1) ** 2))
+        return ((mah - 1) ** 2) * ((2 + mah) / 4 - 3 / 16 * mah * ((mah + 1) ** 2))
 
 
 def sp_cr(press_0, mass, v0, x0, tau):
