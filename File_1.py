@@ -151,92 +151,42 @@ class EulerianGrid(object):
         self.x_interface[self.num_coor - 1] = 0
 
 
-all_time_arr = []
-all_speed_arr = []
-all_press_arr = []
-press_bottom_arr = []
-# array_kpd = []
 # length0 = np.arange(init_data['Lo'], data_test['Lend'], 0.075)
-# pressend = np.arange(init_data['press'], data_test['Pressend'], 10 * (10 ** 6))
-print(None)
-# for i in length0:
-#     for k in pressend:
-#         layer = EulerianGrid(init_data, k)
-#         layer.x_recalculation(i)
-#         while True:
-#             layer.get_tau()
-#             layer.x_prev = layer.x_interface[1]  # Для расчета q
-#             answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
-#                            layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
-#             # answer возвращает скорость правой границы и ее координату
-#             # Пересчет скоростей и перемещений границ работает правильно
-#             layer.x_recalculation(answer[1])
-#             layer.v_interface[layer.num_coor - 2] = answer[0]
-#             k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
-#             layer.v_interface = k_line * layer.x_interface
-#
-#             # get_all_value(layer.tau, all_time_arr, 'time')
-#             # get_all_value(layer.v_interface[len(layer.v_interface) - 2], all_speed_arr, 'speed')
-#             # get_all_value(layer.press_cell[len(layer.press_interface) - 2], all_press_arr, 'press')
-#             # get_all_value(layer.press_cell[1], press_bottom_arr, 'press')
-#
-#             layer.get_c_interface()
-#             layer.get_mah_m()
-#             layer.get_mah_p()
-#             layer.get_mah_interface()
-#             layer.get_press_interface()
-#             layer.get_ff('mines')
-#             layer.get_ff('plus')
-#             layer.get_f()
-#             layer.get_q()
-#             if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
-#                 break
-#         buf = get_kpd(layer.k, init_data['mass'], layer.v_interface[98], k, i)
-#         # array_kpd.append(buf)
-#         print(layer.v_interface[98], k, i, buf)
+pressend = np.arange(97 * (10 ** 6), 99 * (10 ** 6), 5 * (10 ** 5))
+length0 = [0.075 * 7]
 
-layer = EulerianGrid(init_data, init_data['press'])
-layer.x_recalculation(init_data['Lo'])
-while True:
-    layer.get_tau()
-    layer.x_prev = layer.x_interface[1]  # Для расчета q
-    answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
-                   layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
-    # answer возвращает скорость правой границы и ее координату
-    # Пересчет скоростей и перемещений границ работает правильно
-    layer.x_recalculation(answer[1])
-    layer.v_interface[layer.num_coor - 2] = answer[0]
-    k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
-    layer.v_interface = k_line * layer.x_interface
+for z in length0:
+    for k in pressend:
+        layer = EulerianGrid(init_data, k)
+        layer.x_recalculation(z)
+        while True:
+            layer.get_tau()
+            layer.x_prev = layer.x_interface[1]  # Для расчета q
+            answer = sp_cr(layer.press_cell[layer.num_coor - 2], init_data['mass'],
+                           layer.v_interface[layer.num_coor - 2], layer.x_interface[layer.num_coor - 2], layer.tau)
+            # answer возвращает скорость правой границы и ее координату
+            # Пересчет скоростей и перемещений границ работает правильно
+            layer.x_recalculation(answer[1])
+            layer.v_interface[layer.num_coor - 2] = answer[0]
+            k_line = layer.v_interface[layer.num_coor - 2] / answer[1]
+            layer.v_interface = k_line * layer.x_interface
 
-    get_all_value(layer.tau, all_time_arr, 'time')
-    get_all_value(layer.v_interface[len(layer.v_interface) - 2], all_speed_arr, 'speed')
-    get_all_value(layer.press_cell[len(layer.press_interface) - 2], all_press_arr, 'press')
-    get_all_value(layer.press_cell[1], press_bottom_arr, 'press')
+            # get_all_value(layer.tau, all_time_arr, 'time')
+            # get_all_value(layer.v_interface[len(layer.v_interface) - 2], all_speed_arr, 'speed')
+            # get_all_value(layer.press_cell[len(layer.press_interface) - 2], all_press_arr, 'press')
+            # get_all_value(layer.press_cell[1], press_bottom_arr, 'press')
 
-    layer.get_c_interface()
-    layer.get_mah_m()
-    layer.get_mah_p()
-    layer.get_mah_interface()
-    layer.get_press_interface()
-    layer.get_ff('mines')
-    layer.get_ff('plus')
-    layer.get_f()
-    layer.get_q()
-    if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
-        break
-
-# print(None)
-# print(length0))
-print(None)
-get_plot(all_time_arr, all_speed_arr, 'Время', 'Скорость', 'График зависимости скорости снаряда от времени')
-plt.plot(all_time_arr, all_press_arr)
-plt.plot(all_time_arr, press_bottom_arr)
-plt.grid(True)
-plt.ylabel('Давление')
-plt.xlabel('Время')
-plt.title('График зависимости давления на дно ствола от времени')
-plt.show()
-# get_plot(all_time_arr, all_press_arr, 'Время', 'Давление', 'График зависимости давления на дно снаряда от времени')
-# get_plot(all_time_arr, press_bottom_arr, 'Время', 'Давление на дно ствола',
-#          'График зависимости давления на дно ствола от времени')
+            layer.get_c_interface()
+            layer.get_mah_m()
+            layer.get_mah_p()
+            layer.get_mah_interface()
+            layer.get_press_interface()
+            layer.get_ff('mines')
+            layer.get_ff('plus')
+            layer.get_f()
+            layer.get_q()
+            if layer.x_interface[layer.num_coor - 2] >= init_data['L']:
+                break
+        buf = get_kpd(layer.k, init_data['mass'], layer.v_interface[98], k, z)
+        # array_kpd.append(buf)
+        print(layer.v_interface[98], k, z, buf)
