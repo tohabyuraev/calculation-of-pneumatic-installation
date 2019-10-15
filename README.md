@@ -1,2 +1,2 @@
-# legendary-octo-umbrella
+# calculation of pneumatic installation
 The repository, that contains my HW
