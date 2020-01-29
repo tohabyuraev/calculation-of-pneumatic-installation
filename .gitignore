@@ -1,0 +1,17 @@
+# Игнор .txt файлов
+*.txt
+
+# Игнор .xlsx файлов
+*.xlsx
+
+# Игнор .png файлов
+*.png
+
+# Игнор файлы для VisualStudioCode
+.vscode
+__pycache__
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
