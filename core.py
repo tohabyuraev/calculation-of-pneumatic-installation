@@ -1,5 +1,5 @@
 ﻿"""
-    solution.py -- модуль, в котором описан класс 'EulerianGrid' для решения ОЗВБ
+    core.py -- модуль, в котором описан класс 'EulerianGrid' для решения ОЗВБ
         в газодинамической постановке
 
     Author: Anthony Byuraev 
@@ -9,7 +9,6 @@
 __author__ = 'Anthony Byuraev'
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class EulerianGrid(object):
@@ -25,6 +24,9 @@ class EulerianGrid(object):
             L0 {float} -- начальная длина запоршневого пространства
 
     """
+
+    def __str__(self):
+        return 'Объект класса EulerianGrid'
 
     # Параметры АО и газа по умолчанию
     defaultChar = {
@@ -54,37 +56,43 @@ class EulerianGrid(object):
         self.S = np.pi * init_data['d'] ** 2 / 4
         self.L0 = init_data.get('L0', \
             kwargrs.get('L0', self.defaultChar['L0']))
+        self.L = init_data.get('L', \
+            kwargrs.get('L', self.defaultChar['L']))
 
         # параметры газа
         self.R = init_data.get('R', self.defaultChar['R'])
         self.k = init_data.get('k', self.defaultChar['k'])
 
-        self.ro_cell = np.full(self.num_coor, self.ro)
-        self.v_cell = np.full(self.num_coor, 0.0)
         self.energy_cell = np.full(self.num_coor, self.press / (self.k - 1) / self.ro)
-        self.press_cell = np.full(self.num_coor, self.press)
         self.c_cell = np.full(self.num_coor, np.sqrt(self.k * self.press / self.ro))
+        self.ro_cell = np.full(self.num_coor, self.ro)
+        self.v_cell = np.zeros(self.num_coor)
+        self.press_cell = np.zeros(self.num_coor)
 
         # Для расчета Маха на интерфейсе
-        self.mah_cell_m = np.full(self.num_coor - 1, 0.0)
-        self.mah_cell_p = np.full(self.num_coor - 1, 0.0)
+        self.mah_cell_m = np.zeros(self.num_coor - 1)
+        self.mah_cell_p = np.zeros(self.num_coor - 1)
 
-        # Для расчета потока f (Векторы Ф )
-        self.F_param_p = np.array([np.full(self.num_coor - 1, 0.0), \
-            np.full(self.num_coor - 1, 0.0), np.full(self.num_coor - 1, 0.0)])
-        self.F_param_m = np.array([np.full(self.num_coor - 1, 0.0), \
-            np.full(self.num_coor - 1, 0.0), np.full(self.num_coor - 1, 0.0)])
+        # Для расчета потока f (Векторы Ф)
+        self.F_param_p = np.array([np.zeros(self.num_coor - 1),
+                                   np.zeros(self.num_coor - 1), 
+                                   np.zeros(self.num_coor - 1)])
+        self.F_param_m = np.array([np.zeros(self.num_coor - 1),
+                                   np.zeros(self.num_coor - 1), 
+                                   np.zeros(self.num_coor - 1)])
         
-        self.c_interface = np.full(self.num_coor - 1, 0.0)
-        self.mah_interface = np.full(self.num_coor - 1, 0.0)
-        self.press_interface = np.full(self.num_coor - 1, 0.0)
-        self.v_interface = np.full(self.num_coor - 1, 0.0)
-        self.x_interface = np.full(self.num_coor - 1, 0.0)
+        self.c_interface = np.zeros(self.num_coor - 1)
+        self.mah_interface = np.zeros(self.num_coor - 1)
+        self.press_interface = np.zeros(self.num_coor - 1)
+        self.v_interface = np.zeros(self.num_coor - 1)
+        self.x_interface = np.zeros(self.num_coor - 1)
 
-        self.f_param = np.array([np.full(self.num_coor - 1, 0.0), \
-            self.press_cell[1:], np.full(self.num_coor - 1, 0.0)])
-        self.q_param = np.array([self.ro_cell, self.ro_cell * self.v_cell, self.ro_cell * \
-            (self.energy_cell + self.v_cell ** 2 / 2)])
+        self.f_param = np.array([np.zeros(self.num_coor - 1),
+                                 self.press_cell[1:], 
+                                 np.zeros(self.num_coor - 1)])
+        self.q_param = np.array([self.ro_cell, 
+                                 self.ro_cell * self.v_cell,
+                                 self.ro_cell * (self.energy_cell + self.v_cell ** 2 / 2)])
         
     def _get_q(self):
         coef_stretch = self.x_prev / self.x_interface[1]
@@ -211,3 +219,52 @@ class EulerianGrid(object):
             if abs(mah) >= 1: buf.append((mah - abs(mah)) / 2 / mah)
             else: buf.append((mah - 1) ** 2 * ((2 + mah) / 4 - 3 / 16 * mah * (mah + 1) ** 2))
         return np.asarray(buf)
+
+    def run(self):
+        """
+            Метод - решение. Последовательное интегрирование параметров системы.
+        """
+        
+        # Вычисление координат границ в начальный момент времени
+        self._new_x_interf(self.L0)
+
+        # Формирование массивов результатов
+        self.coordShell = []        # положение снаряда
+        self.velShell = []          # скорость снаряда
+        self.pressBottomShell = []  # давление на дно снаряда
+        self.pressBottomStem = []   # давление на дно ствола
+        self.time = []              # время
+
+        # Последовательное вычисления с шагом по времени
+        while True:
+            self._get_tau()
+            self.x_prev = self.x_interface[1]
+            self._new_x_interf(self._end_vel_x()[1])
+            self.v_interface[-1] = self._end_vel_x()[0]
+            # линейное распределение скорости
+            self.v_interface = ( self.v_interface[-1] / self.x_interface[-1] ) * self.x_interface
+
+            # заполнение массивов для графиков
+            if len(self.time) == 0:
+                self.time.append(self.tau)
+            else:
+                buf = self.tau + self.time[len(self.time) - 1]
+                self.time.append(buf)
+            self.coordShell.append(self.x_interface[-1])
+            self.velShell.append(self.v_interface[-1])
+            self.pressBottomShell.append(self.press_cell[-2])
+            self.pressBottomStem.append(self.press_cell[1])
+
+            # последовательные вычисления
+            self._get_c_interface()
+            self._get_mah_mp()
+            self._get_mah_press_interface()
+            self._get_F_mines()
+            self._get_F_plus()
+            self._get_f()
+            self._get_q()
+            if self.x_interface[-1] >= self.L:
+                break
+
+if __name__ == '__main__':
+    print('Error: попытка запустить coreP.py')
