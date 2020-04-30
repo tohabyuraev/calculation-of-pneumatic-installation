@@ -13,6 +13,5 @@ init_data = {
     'R': 287
 }
 
-layer = EulerianGrid(init_data, pressInit=5e6)
+layer = EulerianGrid(init_data)
 layer.run()
-print(layer.v_interface[-1])
